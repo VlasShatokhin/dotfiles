@@ -1,4 +1,4 @@
-# Tool init — cached to avoid process spawns (~25ms saved)
+# Tool init — cached to avoid process spawns
 # Regenerate: rm ~/.cache/zsh/init/*
 
 _cached_init() {
