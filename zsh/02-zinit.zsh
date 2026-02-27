@@ -13,15 +13,14 @@ source "$ZINIT_HOME/zinit.zsh"
 # Synchronous — must be available before later modules (08-work uses it)
 zinit light romkatv/zsh-defer
 
-# Prompt — oh-my-posh with native millis patch (~10ms saved per prompt)
+# Prompt — oh-my-posh (cached init)
 if (( $+commands[oh-my-posh] )); then
+    # Cached init + native zsh timing
     zmodload zsh/datetime
     local _omp_cache="$HOME/.cache/zsh/init/oh-my-posh.zsh"
     if [[ ! -f "$_omp_cache" ]] || [[ "$(command -v oh-my-posh)" -nt "$_omp_cache" ]]; then
         mkdir -p "${_omp_cache:h}"
-        # Generate init, then patch the real init file to use native zsh millis
         oh-my-posh init zsh --config "$HOME/.config/ohmyposh/zen.toml" > "$_omp_cache"
-        # Patch oh-my-posh's real init to use native zsh millis instead of binary spawn
         local _omp_real=("$HOME"/.cache/oh-my-posh/init.*.zsh(N))
         if [[ ${#_omp_real[@]} -gt 0 ]]; then
             sed -i '' 's#\$(\$_omp_executable get millis)#$(( ${EPOCHREALTIME/\%.*} * 1000 + ${${EPOCHREALTIME\#*.}[1,3]} ))#g' "${_omp_real[1]}"
