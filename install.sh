@@ -264,7 +264,12 @@ BREW
 
     streak
     echo ""
-    [[ ${#existing[@]} -gt 0 ]] && info "Backups saved to $BACKUP"
+    if [[ ${#existing[@]} -gt 0 ]]; then
+        info "Backed up to $BACKUP:"
+        for f in "${existing[@]}"; do
+            info "  $f"
+        done
+    fi
     info "Open a new tab to load the new config"
     echo ""
     info "Custom env vars, aliases, functions? Add to:"
