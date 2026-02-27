@@ -1,0 +1,7 @@
+#!/bin/bash
+case "$1" in
+    install) shift; for pkg in "$@"; do echo "[brew] $pkg"; done ;;
+    --prefix) echo "/home/tester/brew" ;;
+    shellenv) echo "export HOMEBREW_PREFIX=/home/tester/brew" ;;
+    *) echo "[brew] $*" ;;
+esac
