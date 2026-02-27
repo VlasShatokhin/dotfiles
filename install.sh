@@ -51,6 +51,12 @@ streak() {
 # =============================================================================
 
 detect() {
+    if [[ "$(id -u)" -eq 0 ]]; then
+        echo -e "${yellow}Do not run as root/sudo.${reset}"
+        echo "Run directly: bash install.sh"
+        exit 1
+    fi
+
     if ! command -v brew &>/dev/null; then
         echo -e "${yellow}Homebrew not found.${reset}"
         echo "Install it first: https://brew.sh"
