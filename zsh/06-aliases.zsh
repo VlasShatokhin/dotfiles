@@ -1,5 +1,5 @@
 alias ..="cd .."
-alias c="clear && source ~/.zshrc"
+alias c="clear && exec zsh"
 alias l="ls -lahFG"
 
 if (( $+commands[bat] )); then
