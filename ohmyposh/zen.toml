@@ -1,0 +1,170 @@
+console_title_template = '{{ .Shell }} in {{ .Folder }}'
+version = 3
+final_space = true
+
+# Tooltips extend the rprompt (execution time) rather than replacing it
+tooltips_action = 'extend'
+
+[[blocks]]
+type = 'prompt'
+alignment = 'left'
+newline = true
+
+[[blocks.segments]]
+type = 'path'
+style = 'plain'
+foreground = '#7B9B8E'
+background = 'transparent'
+template = '<b>{{ .Path }}</b> '
+
+[blocks.segments.properties]
+style = 'full'
+
+[[blocks.segments]]
+type = 'git'
+style = 'plain'
+foreground = 'grey'
+background = 'transparent'
+template = '{{ .HEAD }}{{ if or (.Working.Changed) (.Staging.Changed) }} *{{ end }}{{ if or (gt .Behind 0) (gt .Ahead 0) }} <b><cyan>{{ if gt .Behind 0 }}⇣{{ end }}{{ if gt .Ahead 0 }}⇡{{ end }}</></b>{{ end }}'
+
+[blocks.segments.properties]
+branch_icon = ''
+commit_icon = '@'
+fetch_status = true
+fetch_upstream_icon = true
+
+[[blocks.segments]]
+type = 'session'
+style = 'plain'
+foreground = '#555555'
+background = 'transparent'
+template = '{{ if gt .Jobs 0 }} &{{ .Jobs }}{{ end }}'
+
+[[blocks]]
+type = 'rprompt'
+overflow = 'hidden'
+
+[[blocks.segments]]
+type = 'executiontime'
+style = 'plain'
+foreground = '#555555'
+background = 'transparent'
+template = '{{ .FormattedMs }}'
+
+[blocks.segments.properties]
+threshold = 5000
+
+[[blocks]]
+type = 'prompt'
+alignment = 'left'
+newline = true
+
+[[blocks.segments]]
+type = 'text'
+style = 'plain'
+foreground = '#CCCCCC'
+background = 'transparent'
+template = '❯'
+
+[transient_prompt]
+foreground = '#555555'
+background = 'transparent'
+template = '❯ '
+
+[secondary_prompt]
+foreground = 'magenta'
+background = 'transparent'
+template = ' <b>❯</b> '
+
+# Tooltips — contextual segments that appear when you type a matching command
+[[tooltips]]
+type = 'kubectl'
+tips = ['kubectl', 'k', 'kubens', 'kubectx', 'kx', 'kn']
+style = 'plain'
+foreground = 'cyan'
+background = 'transparent'
+template = ' <grey>k8s:</> {{ .Context }}{{ if .Namespace }}:{{ .Namespace }}{{ end }}'
+
+[tooltips.properties]
+parse_kubeconfig = true
+
+[[tooltips]]
+type = 'terraform'
+tips = ['terraform', 'tf']
+style = 'plain'
+foreground = 'magenta'
+background = 'transparent'
+template = ' <grey>tf:</> {{ .WorkspaceName }}'
+
+[tooltips.properties]
+fetch_version = false
+
+[[tooltips]]
+type = 'aws'
+tips = ['aws', 'awslogin']
+style = 'plain'
+foreground = 'yellow'
+background = 'transparent'
+template = ' <grey>aws:</> {{ .Profile }}{{ if .Region }} ({{ .Region }}){{ end }}'
+
+[tooltips.properties]
+display_default = false
+
+[[tooltips]]
+type = 'go'
+tips = ['go', 'air']
+style = 'plain'
+foreground = 'cyan'
+background = 'transparent'
+template = ' <grey>go:</> {{ .Full }}'
+
+[tooltips.properties]
+parse_mod_file = true
+
+[tooltips.cache]
+duration = '1h'
+strategy = 'folder'
+
+[[tooltips]]
+type = 'java'
+tips = ['java', 'gradle', 'mvn', './gradlew']
+style = 'plain'
+foreground = 'red'
+background = 'transparent'
+template = ' <grey>java:</> {{ .Full }}'
+
+[tooltips.cache]
+duration = '1h'
+strategy = 'folder'
+
+[[tooltips]]
+type = 'python'
+tips = ['python', 'pip', 'pipenv', 'uv']
+style = 'plain'
+foreground = 'green'
+background = 'transparent'
+template = ' <grey>py:</> {{ .Full }}{{ if .Venv }} ({{ .Venv }}){{ end }}'
+
+[tooltips.cache]
+duration = '1h'
+strategy = 'folder'
+
+[[tooltips]]
+type = 'docker'
+tips = ['docker', 'docker-compose']
+style = 'plain'
+foreground = 'blue'
+background = 'transparent'
+template = ' <grey>docker:</> {{ .Context }}'
+
+[[tooltips]]
+type = 'node'
+tips = ['node', 'npm', 'npx', 'yarn']
+style = 'plain'
+foreground = 'green'
+background = 'transparent'
+template = ' <grey>node:</> {{ .Full }}'
+
+[tooltips.cache]
+duration = '1h'
+strategy = 'folder'
