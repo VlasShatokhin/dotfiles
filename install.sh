@@ -85,9 +85,20 @@ detect() {
 
     existing=()
     for f in .zshrc .zprofile .hushlogin; do
-        [[ -e "$HOME/$f" && ! -L "$HOME/$f" ]] && existing+=("$f")
+        if [[ -e "$HOME/$f" || -L "$HOME/$f" ]]; then
+            # Skip if already symlinked to our dotfiles
+            if [[ -L "$HOME/$f" ]] && [[ "$(readlink "$HOME/$f")" == *dotfiles/"$f" ]]; then
+                continue
+            fi
+            existing+=("$f")
+        fi
     done
-    [[ -e "$HOME/.config/ohmyposh/zen.toml" && ! -L "$HOME/.config/ohmyposh/zen.toml" ]] && existing+=(".config/ohmyposh/zen.toml")
+    if [[ -e "$HOME/.config/ohmyposh/zen.toml" ]]; then
+        if ! [[ -L "$HOME/.config/ohmyposh/zen.toml" ]] || \
+           [[ "$(readlink "$HOME/.config/ohmyposh/zen.toml")" != *dotfiles/ohmyposh/zen.toml ]]; then
+            existing+=(".config/ohmyposh/zen.toml")
+        fi
+    fi
 
     if [[ ${#existing[@]} -gt 0 ]]; then
         warnings+=("  existing configs will be backed up: ${existing[*]}")
@@ -184,13 +195,33 @@ fpath=($brew_prefix/share/zsh/site-functions \$fpath)
 BREW
     log "Detected Homebrew at $brew_prefix"
 
-    # Clone or update
-    if [[ ! -d "$DOTFILES" ]]; then
+    # Clone or update — avoid clobbering an existing unrelated dotfiles dir
+    if [[ -d "$DOTFILES/.git" ]]; then
+        local remote
+        remote=$(git -C "$DOTFILES" remote get-url origin 2>/dev/null || true)
+        if [[ "$remote" == *vlasshatokhin/dotfiles* ]]; then
+            log "Updating dotfiles..."
+            git -C "$DOTFILES" pull --ff-only 2>/dev/null || true
+        else
+            DOTFILES="$HOME/.zsh-dotfiles"
+            log "~/dotfiles belongs to another repo, using $DOTFILES instead"
+            if [[ ! -d "$DOTFILES" ]]; then
+                git clone "$REPO" "$DOTFILES"
+            else
+                git -C "$DOTFILES" pull --ff-only 2>/dev/null || true
+            fi
+        fi
+    elif [[ -d "$DOTFILES" ]]; then
+        DOTFILES="$HOME/.zsh-dotfiles"
+        log "~/dotfiles exists but is not a git repo, using $DOTFILES instead"
+        if [[ ! -d "$DOTFILES" ]]; then
+            git clone "$REPO" "$DOTFILES"
+        else
+            git -C "$DOTFILES" pull --ff-only 2>/dev/null || true
+        fi
+    else
         log "Cloning dotfiles..."
         git clone "$REPO" "$DOTFILES"
-    else
-        log "Updating dotfiles..."
-        git -C "$DOTFILES" pull --ff-only 2>/dev/null || true
     fi
 
     # Brew packages

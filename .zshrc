@@ -1,7 +1,9 @@
 # ~/.zshrc — Module orchestrator
-# Source all modules from ~/dotfiles/zsh/ in sorted order.
-# Modules are numbered (01-*, 02-*, ...) to control load sequence.
+# Source all modules in sorted order. Finds repo via symlink target.
 
-for config in "$HOME/dotfiles/zsh"/*.zsh(N); do
+DOTFILES_DIR="${${(%):-%x}:A:h}"
+[[ -d "$DOTFILES_DIR/zsh" ]] || DOTFILES_DIR="$HOME/dotfiles"
+
+for config in "$DOTFILES_DIR/zsh"/*.zsh(N); do
     source "$config"
 done
