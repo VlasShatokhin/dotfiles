@@ -162,6 +162,22 @@ summarize() {
 execute() {
     echo ""
 
+    # Generate brew env cache (detected once, sourced forever — avoids ~41ms per shell)
+    local brew_prefix
+    brew_prefix="$(brew --prefix)"
+    local brew_cache="$HOME/.cache/zsh/init/brew.zsh"
+    mkdir -p "$(dirname "$brew_cache")"
+    cat > "$brew_cache" <<BREW
+export HOMEBREW_PREFIX="$brew_prefix"
+export HOMEBREW_CELLAR="$brew_prefix/Cellar"
+export HOMEBREW_REPOSITORY="$brew_prefix"
+export PATH="$brew_prefix/bin:$brew_prefix/sbin:\$PATH"
+export MANPATH="$brew_prefix/share/man:\${MANPATH:-}"
+export INFOPATH="$brew_prefix/share/info:\${INFOPATH:-}"
+fpath=($brew_prefix/share/zsh/site-functions \$fpath)
+BREW
+    log "Detected Homebrew at $brew_prefix"
+
     # Clone or update
     if [[ ! -d "$DOTFILES" ]]; then
         log "Cloning dotfiles..."
@@ -211,6 +227,7 @@ execute() {
 
     streak
     echo ""
+    [[ ${#existing[@]} -gt 0 ]] && info "Backups saved to $BACKUP"
     info "Open a new tab to load the new config"
     echo ""
     info "Custom env vars, aliases, functions? Add to:"

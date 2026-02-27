@@ -13,7 +13,15 @@ source "$ZINIT_HOME/zinit.zsh"
 # Synchronous — must be available before later modules (08-work uses it)
 zinit light romkatv/zsh-defer
 
-(( $+commands[oh-my-posh] )) && eval "$(oh-my-posh init zsh --config $HOME/.config/ohmyposh/zen.toml)"
+# Prompt — cached init (~12ms saved)
+if (( $+commands[oh-my-posh] )); then
+    local _omp_cache="$HOME/.cache/zsh/init/oh-my-posh.zsh"
+    if [[ ! -f "$_omp_cache" ]] || [[ "$(command -v oh-my-posh)" -nt "$_omp_cache" ]]; then
+        mkdir -p "${_omp_cache:h}"
+        oh-my-posh init zsh --config "$HOME/.config/ohmyposh/zen.toml" > "$_omp_cache"
+    fi
+    source "$_omp_cache"
+fi
 
 # Turbo — loads after prompt renders
 zinit ice wait lucid; zinit light zsh-users/zsh-completions

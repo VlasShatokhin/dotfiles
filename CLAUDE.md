@@ -21,7 +21,7 @@ Two modes: interactive (TTY) loads everything; agent shells (~15ms) skip what th
 | [fzf](https://github.com/junegunn/fzf) | Fuzzy finder (Ctrl-R history, Ctrl-T files) |
 | [bat](https://github.com/sharkdp/bat) | `cat` with syntax highlighting. Aliased as `cat`, guarded |
 
-Git performance: `core.fsmonitor` + `core.untrackedcache` globally (background daemon instead of scanning).
+Git performance: `core.fsmonitor` + `core.untrackedcache` globally (background daemon instead of scanning). For large repos, enable `git maintenance start` per-repo.
 
 ## Module load order
 
@@ -35,8 +35,14 @@ Scope: **all** = every shell; **tty** = interactive only.
 | 04-history       | tty   | 50k shared history                                         |
 | 05-keybindings   | tty   | Option+arrow word navigation                               |
 | 06-aliases       | all   | shell aliases, user overrides (`~/.aliases.zsh`, `~/.functions.zsh`) |
-| 07-tools         | mixed | mise (all); fzf (tty)                                      |
+| 07-tools         | mixed | mise (all); fzf (tty). Cached init scripts in `~/.cache/zsh/init/` |
 | 99-zoxide        | tty   | smart cd (must be last)                                    |
+
+## Performance
+
+Tool init scripts (brew, oh-my-posh, mise, fzf, zoxide) are cached to `~/.cache/zsh/init/` — avoids ~78ms of process spawns per shell. Caches auto-regenerate when the binary changes. To force: `rm ~/.cache/zsh/init/*`.
+
+Homebrew env is detected once by the installer and cached to `~/.cache/zsh/init/brew.zsh` — works on both Apple Silicon and Intel Macs (~41ms saved vs `eval "$(brew shellenv)"`).
 
 ## Adding config
 
