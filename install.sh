@@ -224,10 +224,6 @@ BREW
         ln -sf "$DOTFILES/ohmyposh/zen.toml" ~/.config/ohmyposh/zen.toml
     fi
 
-    # Pre-install zinit + plugins (so first tab open is instant)
-    log "Installing shell plugins..."
-    zsh -ic 'exit' 2>/dev/null
-
     # Git performance
     if [[ $opt_git -eq 1 ]]; then
         log "Enabling git performance..."
