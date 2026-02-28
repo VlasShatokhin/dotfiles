@@ -69,8 +69,13 @@ detect() {
     warnings=()
     prompt_default="Y"
 
+    if [[ -f "$HOME/.zshenv" ]]; then
+        warnings+=("  .zshenv found — it runs before our config and may conflict")
+    fi
+
     if [[ -d "$HOME/.oh-my-zsh" ]]; then
         warnings+=("  oh-my-zsh detected — this replaces it with zinit (lighter, faster)")
+        warnings+=("  ~/.oh-my-zsh/ will remain on disk — safe to remove after install")
     fi
 
     if [[ -f "$HOME/.p10k.zsh" ]] || [[ -d "${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k" ]]; then
@@ -83,21 +88,22 @@ detect() {
         prompt_default="N"
     fi
 
+    if [[ -d "$HOME/.asdf" ]] || command -v asdf &>/dev/null; then
+        warnings+=("  asdf detected — mise replaces it; both can conflict on PATH")
+    fi
+
     existing=()
+    _is_ours() {
+        [[ -L "$1" ]] && [[ "$(readlink "$1")" == "$DOTFILES/"* || "$(readlink "$1")" == "$HOME/.zsh-dotfiles/"* ]]
+    }
     for f in .zshrc .zprofile .hushlogin; do
         if [[ -e "$HOME/$f" || -L "$HOME/$f" ]]; then
-            # Skip if already symlinked to our dotfiles
-            if [[ -L "$HOME/$f" ]] && [[ "$(readlink "$HOME/$f")" == *dotfiles/"$f" ]]; then
-                continue
-            fi
+            _is_ours "$HOME/$f" && continue
             existing+=("$f")
         fi
     done
-    if [[ -e "$HOME/.config/ohmyposh/zen.toml" ]]; then
-        if ! [[ -L "$HOME/.config/ohmyposh/zen.toml" ]] || \
-           [[ "$(readlink "$HOME/.config/ohmyposh/zen.toml")" != *dotfiles/ohmyposh/zen.toml ]]; then
-            existing+=(".config/ohmyposh/zen.toml")
-        fi
+    if [[ -e "$HOME/.config/ohmyposh/zen.toml" || -L "$HOME/.config/ohmyposh/zen.toml" ]]; then
+        _is_ours "$HOME/.config/ohmyposh/zen.toml" || existing+=(".config/ohmyposh/zen.toml")
     fi
 
     if [[ ${#existing[@]} -gt 0 ]]; then
@@ -255,11 +261,11 @@ BREW
         ln -sf "$DOTFILES/ohmyposh/zen.toml" ~/.config/ohmyposh/zen.toml
     fi
 
-    # Git performance
+    # Git performance — only set if not already configured
     if [[ $opt_git -eq 1 ]]; then
         log "Enabling git performance..."
-        git config --global core.fsmonitor true
-        git config --global core.untrackedcache true
+        [[ -z "$(git config --global core.fsmonitor)" ]] && git config --global core.fsmonitor true
+        [[ -z "$(git config --global core.untrackedcache)" ]] && git config --global core.untrackedcache true
     fi
 
     streak
@@ -269,6 +275,22 @@ BREW
         for f in "${existing[@]}"; do
             info "  $f"
         done
+        # Warn if backed up files contained tool init blocks
+        local found_tools=()
+        for f in "${existing[@]}"; do
+            local bf="$BACKUP/$f"
+            [[ -f "$bf" ]] || continue
+            grep -q 'conda init\|conda activate\|__conda_setup' "$bf" 2>/dev/null && found_tools+=("conda")
+            grep -q 'nvm.sh\|NVM_DIR' "$bf" 2>/dev/null && found_tools+=("nvm")
+            grep -q 'pyenv init\|PYENV_ROOT' "$bf" 2>/dev/null && found_tools+=("pyenv")
+            grep -q 'rbenv init\|RBENV_ROOT' "$bf" 2>/dev/null && found_tools+=("rbenv")
+            grep -q 'asdf.sh\|ASDF_DIR' "$bf" 2>/dev/null && found_tools+=("asdf")
+        done
+        if [[ ${#found_tools[@]} -gt 0 ]]; then
+            echo ""
+            info "Your backup contains ${found_tools[*]} init blocks."
+            info "Add them to ~/.env.zsh to keep using these tools."
+        fi
     fi
     info "Open a new tab to load the new config"
     echo ""

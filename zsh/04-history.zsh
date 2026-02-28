@@ -2,7 +2,7 @@
 [[ -t 1 ]] || return
 
 HISTSIZE=50000
-HISTFILE=~/.zsh_history
+HISTFILE="${HISTFILE:-$HOME/.zsh_history}"
 SAVEHIST=$HISTSIZE
 setopt appendhistory
 setopt sharehistory

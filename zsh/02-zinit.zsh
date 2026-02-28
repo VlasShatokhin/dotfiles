@@ -23,7 +23,11 @@ if (( $+commands[oh-my-posh] )); then
         oh-my-posh init zsh --config "$HOME/.config/ohmyposh/zen.toml" > "$_omp_cache"
         local _omp_real=("$HOME"/.cache/oh-my-posh/init.*.zsh(N))
         if [[ ${#_omp_real[@]} -gt 0 ]]; then
-            sed -i '' 's#\$(\$_omp_executable get millis)#$(( ${EPOCHREALTIME/\%.*} * 1000 + ${${EPOCHREALTIME\#*.}[1,3]} ))#g' "${_omp_real[1]}"
+            if [[ "$(uname)" == "Darwin" ]]; then
+                sed -i '' 's#\$(\$_omp_executable get millis)#$(( ${EPOCHREALTIME/\%.*} * 1000 + ${${EPOCHREALTIME\#*.}[1,3]} ))#g' "${_omp_real[1]}"
+            else
+                sed -i 's#\$(\$_omp_executable get millis)#$(( ${EPOCHREALTIME/\%.*} * 1000 + ${${EPOCHREALTIME\#*.}[1,3]} ))#g' "${_omp_real[1]}"
+            fi
         fi
     fi
     source "$_omp_cache"
