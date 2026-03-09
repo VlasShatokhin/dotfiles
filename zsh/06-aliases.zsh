@@ -10,7 +10,3 @@ fi
 alias g-="git checkout -"
 alias g--="git checkout main && git pull"
 alias gs="git status"
-
-# User overrides (not in repo)
-[[ -f ~/.aliases.zsh ]] && source ~/.aliases.zsh
-[[ -f ~/.functions.zsh ]] && source ~/.functions.zsh

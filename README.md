@@ -10,13 +10,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/vlasshatokhin/dotfiles/main/
 
 Requires [Homebrew](https://brew.sh).
 
-## User overrides (not in repo)
+## Customize
 
-| File | Sourced by | Purpose |
-|------|-----------|---------|
-| `~/.env.zsh` | 01-env | Custom env vars, PATH, editor |
-| `~/.aliases.zsh` | 06-aliases | Custom aliases |
-| `~/.functions.zsh` | 06-aliases | Custom functions |
+Add your config to `~/.zshrc.local` - it's sourced last.
 
 ## Structure
 

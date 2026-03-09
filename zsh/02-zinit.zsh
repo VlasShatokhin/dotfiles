@@ -13,22 +13,12 @@ source "$ZINIT_HOME/zinit.zsh"
 # Synchronous — must be available before later modules (08-work uses it)
 zinit light romkatv/zsh-defer
 
-# Prompt — oh-my-posh (cached init)
+# Prompt — oh-my-posh (cached init, ~12ms saved)
 if (( $+commands[oh-my-posh] )); then
-    # Cached init + native zsh timing
-    zmodload zsh/datetime
     local _omp_cache="$HOME/.cache/zsh/init/oh-my-posh.zsh"
     if [[ ! -f "$_omp_cache" ]] || [[ "$(command -v oh-my-posh)" -nt "$_omp_cache" ]]; then
         mkdir -p "${_omp_cache:h}"
         oh-my-posh init zsh --config "$HOME/.config/ohmyposh/zen.toml" > "$_omp_cache"
-        local _omp_real=("$HOME"/.cache/oh-my-posh/init.*.zsh(N))
-        if [[ ${#_omp_real[@]} -gt 0 ]]; then
-            if [[ "$(uname)" == "Darwin" ]]; then
-                sed -i '' 's#\$(\$_omp_executable get millis)#$(( ${EPOCHREALTIME/\%.*} * 1000 + ${${EPOCHREALTIME\#*.}[1,3]} ))#g' "${_omp_real[1]}"
-            else
-                sed -i 's#\$(\$_omp_executable get millis)#$(( ${EPOCHREALTIME/\%.*} * 1000 + ${${EPOCHREALTIME\#*.}[1,3]} ))#g' "${_omp_real[1]}"
-            fi
-        fi
     fi
     source "$_omp_cache"
 fi

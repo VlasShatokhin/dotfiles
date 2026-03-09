@@ -29,12 +29,12 @@ Scope: **all** = every shell; **tty** = interactive only.
 
 | Module           | Scope | What it does                                               |
 |------------------|-------|------------------------------------------------------------|
-| 01-env           | all   | PATH, brew, editor, user overrides (`~/.env.zsh`)          |
+| 01-env           | all   | PATH, brew, editor                                         |
 | 02-zinit         | tty   | plugin manager, prompt (oh-my-posh), zsh-defer             |
 | 03-completions   | tty   | compinit (cached daily), fzf-tab config                    |
 | 04-history       | tty   | 50k shared history                                         |
 | 05-keybindings   | tty   | Option+arrow word navigation                               |
-| 06-aliases       | all   | shell aliases, user overrides (`~/.aliases.zsh`, `~/.functions.zsh`) |
+| 06-aliases       | all   | shell aliases (git, bat, navigation)                       |
 | 07-tools         | mixed | mise (all); fzf (tty). Cached init scripts in `~/.cache/zsh/init/` |
 | 99-zoxide        | tty   | smart cd (must be last)                                    |
 
@@ -44,9 +44,14 @@ Tool init scripts (brew, oh-my-posh, mise, fzf, zoxide) are cached to `~/.cache/
 
 Homebrew env is detected once by the installer and cached to `~/.cache/zsh/init/brew.zsh` — works on both Apple Silicon and Intel Macs (~41ms saved vs `eval "$(brew shellenv)"`).
 
-## Adding config
+## Customization
 
-- Env/PATH for agents: `01-env.zsh`
+User config goes in `~/.zshrc.local` — sourced last, after all modules. One file for everything: aliases, functions, env vars, secrets.
+
+For env vars that agents also need (PATH, tool config): use `~/.env.zsh` instead — sourced early by `01-env.zsh` in all shells.
+
+## Adding modules
+
 - Interactive-only: `[[ -t 1 ]] || return` at top
 - Heavy init: `zsh-defer source <script>` (requires 02-zinit loaded)
 - Brew exists in both `.zprofile` and `01-env.zsh` — intentional (login vs subshell), both guarded

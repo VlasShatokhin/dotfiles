@@ -230,15 +230,15 @@ BREW
         git clone "$REPO" "$DOTFILES"
     fi
 
-    # Brew packages
+    # Brew packages — show errors, don't silently swallow
     if [[ $opt_tools -eq 1 ]]; then
         log "Installing dev tools..."
-        brew install mise fzf zoxide bat 2>/dev/null || true
+        brew install mise fzf zoxide bat || echo -e "  ${yellow}Some packages failed — you can retry with: brew install mise fzf zoxide bat${reset}"
     fi
 
     if [[ $opt_prompt -eq 1 ]]; then
         log "Installing oh-my-posh..."
-        brew install oh-my-posh 2>/dev/null || true
+        brew install oh-my-posh || echo -e "  ${yellow}Failed — retry with: brew install oh-my-posh${reset}"
     fi
 
     # Backup existing configs (skip symlinks — those are ours)
@@ -289,13 +289,12 @@ BREW
         if [[ ${#found_tools[@]} -gt 0 ]]; then
             echo ""
             info "Your backup contains ${found_tools[*]} init blocks."
-            info "Add them to ~/.env.zsh to keep using these tools."
+            info "Add them to ~/.zshrc.local to keep using these tools."
         fi
     fi
     info "Open a new tab to load the new config"
     echo ""
-    info "Custom env vars, aliases, functions? Add to:"
-    info "  ~/.env.zsh  ~/.aliases.zsh  ~/.functions.zsh"
+    info "Personal config can be added to ~/.zshrc.local"
 }
 
 # =============================================================================

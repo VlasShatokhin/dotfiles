@@ -7,3 +7,6 @@ DOTFILES_DIR="${${(%):-%x}:A:h}"
 for config in "$DOTFILES_DIR/zsh"/*.zsh(N); do
     source "$config"
 done
+
+# User overrides — one file for all personal config (not in repo)
+[[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
