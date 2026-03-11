@@ -39,7 +39,7 @@ out=$(printf '\n\n\ny\n' | run '
     readlink ~/.zshrc
     readlink ~/.zprofile
     readlink ~/.hushlogin
-    readlink ~/.config/ohmyposh/zen.toml
+    readlink ~/.config/ohmyposh/prompt.toml
     cat ~/.cache/zsh/init/brew.zsh 2>/dev/null | head -1
     git config --global core.fsmonitor
 ')
@@ -47,7 +47,7 @@ out=$(printf '\n\n\ny\n' | run '
 check "Symlink .zshrc"        "$(echo "$out" | grep -c 'dotfiles/.zshrc'    | grep -qc 1 && echo 0 || echo 1)"
 check "Symlink .zprofile"     "$(echo "$out" | grep -c 'dotfiles/.zprofile' | grep -qc 1 && echo 0 || echo 1)"
 check "Symlink .hushlogin"    "$(echo "$out" | grep -c 'dotfiles/.hushlogin'| grep -qc 1 && echo 0 || echo 1)"
-check "Symlink zen.toml"      "$(echo "$out" | grep -c 'ohmyposh/zen.toml'  | grep -qc 1 && echo 0 || echo 1)"
+check "Symlink prompt.toml"      "$(echo "$out" | grep -c 'ohmyposh/prompt.toml'  | grep -qc 1 && echo 0 || echo 1)"
 check "Brew cache generated"  "$(echo "$out" | grep -qc 'HOMEBREW_PREFIX'   && echo 0 || echo 1)"
 check "Git fsmonitor enabled" "$(echo "$out" | grep -qc 'true'              && echo 0 || echo 1)"
 
@@ -74,7 +74,7 @@ out=$(printf '\n\n\ny\n' | run '
     mkdir -p ~/.config && touch ~/.config/starship.toml
     /home/tester/dotfiles/install.sh
     echo "---VERIFY---"
-    test -L ~/.config/ohmyposh/zen.toml && echo "SYMLINKED" || echo "SKIPPED"
+    test -L ~/.config/ohmyposh/prompt.toml && echo "SYMLINKED" || echo "SKIPPED"
 ')
 
 check "Prompt skipped" "$(echo "$out" | grep -qc 'SKIPPED' && echo 0 || echo 1)"

@@ -13,12 +13,20 @@ source "$ZINIT_HOME/zinit.zsh"
 # Synchronous — must be available before later modules (08-work uses it)
 zinit light romkatv/zsh-defer
 
-# Prompt — oh-my-posh (cached init, ~12ms saved)
+# Prompt — oh-my-posh (auto-detects dark/light appearance)
 if (( $+commands[oh-my-posh] )); then
-    local _omp_cache="$HOME/.cache/zsh/init/oh-my-posh.zsh"
+    local _omp_appearance="dark"
+    if [[ "$(defaults read -g AppleInterfaceStyle 2>/dev/null)" != "Dark" ]]; then
+        _omp_appearance="light"
+    fi
+    local _omp_config="$HOME/.config/ohmyposh/prompt.toml"
+    if [[ "$_omp_appearance" == "light" ]] && [[ -f "$HOME/.config/ohmyposh/prompt-light.toml" ]]; then
+        _omp_config="$HOME/.config/ohmyposh/prompt-light.toml"
+    fi
+    local _omp_cache="$HOME/.cache/zsh/init/oh-my-posh-${_omp_appearance}.zsh"
     if [[ ! -f "$_omp_cache" ]] || [[ "$(command -v oh-my-posh)" -nt "$_omp_cache" ]]; then
         mkdir -p "${_omp_cache:h}"
-        oh-my-posh init zsh --config "$HOME/.config/ohmyposh/zen.toml" > "$_omp_cache"
+        oh-my-posh init zsh --config "$_omp_config" > "$_omp_cache"
     fi
     source "$_omp_cache"
 fi

@@ -13,11 +13,11 @@ BACKUP="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 # UI helpers
 # =============================================================================
 
-# Colors — reuse zen.toml palette where possible
+# Colors — reuse prompt.toml palette where possible
 bold='\033[1m'
 yellow='\033[33m'
-green='\033[38;2;123;155;142m'  # #7B9B8E — zen path green
-grey='\033[38;2;85;85;85m'      # #555555 — zen transient grey
+green='\033[38;2;123;155;142m'  # #7B9B8E — prompt path green
+grey='\033[38;2;85;85;85m'      # #555555 — prompt transient grey
 reset='\033[0m'
 
 ask() {
@@ -102,8 +102,8 @@ detect() {
             existing+=("$f")
         fi
     done
-    if [[ -e "$HOME/.config/ohmyposh/zen.toml" || -L "$HOME/.config/ohmyposh/zen.toml" ]]; then
-        _is_ours "$HOME/.config/ohmyposh/zen.toml" || existing+=(".config/ohmyposh/zen.toml")
+    if [[ -e "$HOME/.config/ohmyposh/prompt.toml" || -L "$HOME/.config/ohmyposh/prompt.toml" ]]; then
+        _is_ours "$HOME/.config/ohmyposh/prompt.toml" || existing+=(".config/ohmyposh/prompt.toml")
     fi
 
     if [[ ${#existing[@]} -gt 0 ]]; then
@@ -258,7 +258,8 @@ BREW
 
     if [[ $opt_prompt -eq 1 ]]; then
         mkdir -p ~/.config/ohmyposh
-        ln -sf "$DOTFILES/ohmyposh/zen.toml" ~/.config/ohmyposh/zen.toml
+        ln -sf "$DOTFILES/ohmyposh/prompt.toml" ~/.config/ohmyposh/prompt.toml
+        ln -sf "$DOTFILES/ohmyposh/prompt-light.toml" ~/.config/ohmyposh/prompt-light.toml
     fi
 
     # Git performance — only set if not already configured
@@ -314,7 +315,7 @@ preview() {
     if [[ $opt_prompt -eq 1 ]]; then
         node "├── .config/"
         node "│   └── ohmyposh/"
-        node "│       └── zen.toml → ~/dotfiles/ohmyposh/zen.toml"
+        node "│       └── prompt.toml → ~/dotfiles/ohmyposh/prompt.toml"
     fi
 
     if [[ ${#existing[@]} -gt 0 ]]; then

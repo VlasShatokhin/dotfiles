@@ -9,7 +9,7 @@ Two modes: interactive (TTY) loads everything; agent shells (~15ms) skip what th
 
 | Tool | Role |
 |------|------|
-| [oh-my-posh](https://github.com/JanDeDobbeleer/oh-my-posh) | Prompt engine (`zen.toml`). Transient prompt, contextual tooltips |
+| [oh-my-posh](https://github.com/JanDeDobbeleer/oh-my-posh) | Prompt engine (`prompt.toml`). Transient prompt, contextual tooltips |
 | [zinit](https://github.com/zdharma-continuum/zinit) | Plugin manager. Turbo-loads after prompt renders. Weekly auto-update |
 | [zsh-defer](https://github.com/romkatv/zsh-defer) | Deferred sourcing. Heavy init runs after prompt (~200ms) |
 | [fast-syntax-highlighting](https://github.com/zdharma-continuum/fast-syntax-highlighting) | Command syntax coloring |
