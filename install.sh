@@ -94,7 +94,7 @@ detect() {
 
     existing=()
     _is_ours() {
-        [[ -L "$1" ]] && [[ "$(readlink "$1")" == "$DOTFILES/"* || "$(readlink "$1")" == "$HOME/.zsh-dotfiles/"* ]]
+        [[ -L "$1" ]] && [[ "$(readlink "$1")" == "$DOTFILES/"* || "$(readlink "$1")" == "$HOME/.dotfiles/"* ]]
     }
     for f in .zshrc .zprofile .hushlogin; do
         if [[ -e "$HOME/$f" || -L "$HOME/$f" ]]; then
@@ -201,30 +201,19 @@ fpath=($brew_prefix/share/zsh/site-functions \$fpath)
 BREW
     log "Detected Homebrew at $brew_prefix"
 
-    # Clone or update — avoid clobbering an existing unrelated dotfiles dir
-    if [[ -d "$DOTFILES/.git" ]]; then
-        local remote
-        remote=$(git -C "$DOTFILES" remote get-url origin 2>/dev/null || true)
-        if [[ "$remote" == *vlasshatokhin/dotfiles* ]]; then
-            log "Updating dotfiles..."
-            git -C "$DOTFILES" pull --ff-only 2>/dev/null || true
-        else
-            DOTFILES="$HOME/.zsh-dotfiles"
-            log "~/dotfiles belongs to another repo, using $DOTFILES instead"
-            if [[ ! -d "$DOTFILES" ]]; then
-                git clone "$REPO" "$DOTFILES"
-            else
-                git -C "$DOTFILES" pull --ff-only 2>/dev/null || true
-            fi
-        fi
-    elif [[ -d "$DOTFILES" ]]; then
-        DOTFILES="$HOME/.zsh-dotfiles"
-        log "~/dotfiles exists but is not a git repo, using $DOTFILES instead"
-        if [[ ! -d "$DOTFILES" ]]; then
-            git clone "$REPO" "$DOTFILES"
-        else
-            git -C "$DOTFILES" pull --ff-only 2>/dev/null || true
-        fi
+    # Is ~/dotfiles ours? If not, fall back to ~/.dotfiles
+    _is_our_repo() {
+        [[ -d "$1/.git" ]] && [[ "$(git -C "$1" remote get-url origin 2>/dev/null | tr '[:upper:]' '[:lower:]')" == *vlasshatokhin/dotfiles* ]]
+    }
+
+    if [[ -d "$DOTFILES" ]] && ! _is_our_repo "$DOTFILES"; then
+        DOTFILES="$HOME/.dotfiles"
+        log "~/dotfiles is in use, installing to $DOTFILES"
+    fi
+
+    if _is_our_repo "$DOTFILES"; then
+        log "Updating dotfiles..."
+        git -C "$DOTFILES" pull --ff-only 2>/dev/null || true
     else
         log "Cloning dotfiles..."
         git clone "$REPO" "$DOTFILES"

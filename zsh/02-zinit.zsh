@@ -26,6 +26,9 @@ if (( $+commands[oh-my-posh] )); then
     local _omp_cache="$HOME/.cache/zsh/init/oh-my-posh-${_omp_appearance}.zsh"
     if [[ ! -f "$_omp_cache" ]] || [[ "$(command -v oh-my-posh)" -nt "$_omp_cache" ]]; then
         mkdir -p "${_omp_cache:h}"
+        # Clean all stale oh-my-posh caches before regenerating
+        rm -f "$HOME/.cache/oh-my-posh"/init.*.zsh
+        rm -f "$HOME/.cache/zsh/init"/oh-my-posh*.zsh
         oh-my-posh init zsh --config "$_omp_config" > "$_omp_cache"
     fi
     source "$_omp_cache"
