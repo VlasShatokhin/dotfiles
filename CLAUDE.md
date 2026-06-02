@@ -16,7 +16,6 @@ Two modes: interactive (TTY) loads everything; agent shells skip the TTY-only mo
 | [zsh-history-substring-search](https://github.com/zsh-users/zsh-history-substring-search) | Type a prefix, ↑/↓ walks matching history |
 | [fzf-tab](https://github.com/Aloxaf/fzf-tab) | Fuzzy completion menu |
 | [zsh-completions](https://github.com/zsh-users/zsh-completions) | Extra completions |
-| [mise](https://github.com/jdx/mise) | Tool version manager. Active in all shells (agents need correct paths) |
 | [zoxide](https://github.com/ajeetdsouza/zoxide) | Smart `cd` replacement |
 | [fzf](https://github.com/junegunn/fzf) | Fuzzy finder (Ctrl-R history, Ctrl-T files with bat preview) |
 | [bat](https://github.com/sharkdp/bat) | `cat` with syntax highlighting. Aliased as `cat` (interactive only) |
@@ -40,18 +39,18 @@ Scope: **all** = every shell; **tty** = interactive only.
 | 04-history       | tty   | 50k shared history                                         |
 | 05-keybindings   | tty   | Option+arrow word nav, Ctrl-X Ctrl-E edits line in $EDITOR |
 | 06-aliases       | tty   | interactive aliases (eza, bat, git, nav, confirm-on-clobber) |
-| 07-tools         | mixed | mise (all); fzf + Ctrl-T preview (tty). Cached init in `~/.cache/zsh/init/` |
+| 07-tools         | mixed | cached-init helper (all); fzf + Ctrl-T preview (tty). Caches in `~/.cache/zsh/init/` |
 | 99-zoxide        | tty   | smart cd (must be last)                                    |
 
 Aliases are interactive-only by design: agents issue full commands, so `06-aliases` (and the `cat`→bat alias) never load in non-TTY shells.
 
 ## Performance
 
-Tool init scripts (brew, oh-my-posh, mise, fzf, zoxide) are cached to `~/.cache/zsh/init/` — avoids ~78ms of process spawns per shell. Caches auto-regenerate when the binary changes. To force: `rm ~/.cache/zsh/init/*`.
+Tool init scripts (brew, oh-my-posh, fzf, zoxide) are cached to `~/.cache/zsh/init/` — avoids repeated tool-init process spawns per shell. Caches auto-regenerate when the binary changes. To force: `rm ~/.cache/zsh/init/*`.
 
 Homebrew env is detected once by the installer and cached to `~/.cache/zsh/init/brew.zsh` — works on both Apple Silicon and Intel Macs (~41ms saved vs `eval "$(brew shellenv)"`).
 
-Agent shells get brew/mise/PATH from Claude Code's shell snapshot (replayed from a full shell run). There is intentionally no `.zshenv`; a bare `zsh -c` with no snapshot and no prior interactive shell has no brew/mise. Regenerate via any interactive shell if a snapshot goes stale.
+Agent shells get brew/PATH from Claude Code's shell snapshot (replayed from a full shell run). There is intentionally no `.zshenv`; a bare `zsh -c` with no snapshot and no prior interactive shell has no brew. Regenerate via any interactive shell if a snapshot goes stale.
 
 ## Customization
 

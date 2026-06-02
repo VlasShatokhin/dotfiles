@@ -11,8 +11,6 @@ _cached_init() {
     source "$cache"
 }
 
-(( $+commands[mise] )) && _cached_init mise "activate zsh"
-
 if [[ -t 1 ]] && (( $+commands[fzf] )); then
     _cached_init fzf "--zsh"
     # Preview files on Ctrl-T (no forced colors - terminal palette is honored)

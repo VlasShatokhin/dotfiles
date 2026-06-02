@@ -1,17 +1,15 @@
 # dotfiles
 
-> Lightspeed zsh — sub-50ms startup, equally fast for humans and AI coding agents.
-
-A small, fast, modern zsh setup that's safe to drop onto a fresh machine *or* one that
-already has a shell you care about.
+> Lightspeed zsh — sub-50ms startup, equally fast for humans and AI agents.
 
 ## Features
 
-- **Agent-aware** — non-TTY shells (Claude Code & friends) skip interactive-only modules and load a clean, deterministic environment
-- **Fast** — tool init is cached to `~/.cache/zsh/init/`, so there are no per-shell process spawns
-- **Auto dark/light prompt** — follows the macOS appearance (oh-my-posh), with an exit-code-aware `❯`
-- **Modern tools** — eza, fd, bat, delta, zoxide, fzf (Ctrl-T file preview, Ctrl-R history), syntax highlighting, autosuggestions, prefix history search
-- **Universal installer** — detects oh-my-zsh / powerlevel10k / starship / asdf (and nvm/pyenv/conda), keeps your existing prompt if you have one, and backs up anything it would replace
+- Agent-aware — non-TTY shells skip interactive-only modules
+- Cached tool init (`~/.cache/zsh/init/`) — no per-shell process spawns
+- Auto dark/light prompt (oh-my-posh), exit-code-aware `❯`
+- eza · fd · bat · delta · zoxide · fzf (Ctrl-T preview, Ctrl-R history)
+- Syntax highlighting · autosuggestions · prefix history search
+- Universal installer — detects oh-my-zsh / p10k / starship / asdf / nvm / pyenv / conda, keeps the existing prompt, backs up what it replaces
 
 ## Install
 
@@ -19,45 +17,27 @@ already has a shell you care about.
 bash <(curl -fsSL https://raw.githubusercontent.com/vlasshatokhin/dotfiles/main/install.sh)
 ```
 
-Everything is opt-in and interactive — press Enter to accept defaults. Missing Homebrew is
-offered for install. Want to look before you leap?
+Interactive, opt-in. `--dry-run` previews without changes. Missing Homebrew is offered for install.
 
-```bash
-# review the script first
-curl -fsSL https://raw.githubusercontent.com/vlasshatokhin/dotfiles/main/install.sh | less
+## Installs (opt-in, via Homebrew)
 
-# or preview exactly what it would change, without touching anything
-bash <(curl -fsSL https://raw.githubusercontent.com/vlasshatokhin/dotfiles/main/install.sh) --dry-run
-```
-
-## What it installs (all opt-in)
-
-`mise` · `fzf` · `zoxide` · `bat` · `eza` · `fd` · `delta` · `oh-my-posh` — chosen interactively,
-via Homebrew.
+`fzf` · `zoxide` · `bat` · `eza` · `fd` · `delta` · `oh-my-posh`
 
 ## Existing setup
 
-Already have a shell you like? The installer adapts:
-
-- Detects **oh-my-zsh / powerlevel10k / starship** and keeps your existing prompt
-- Flags **asdf / nvm / pyenv / conda** init so you can carry it into `~/.zshrc.local`
-- Backs up any file it would replace to `~/.dotfiles-backup/<timestamp>/`
+- Keeps oh-my-zsh / powerlevel10k / starship prompts
+- Flags asdf / nvm / pyenv / conda init for `~/.zshrc.local`
+- Backs up replaced files to `~/.dotfiles-backup/<timestamp>/`
 
 ## Customize
 
-```bash
-# interactive shells: aliases, functions, prompt tweaks
-~/.zshrc.local
-
-# all shells incl. agents: PATH and env vars
-~/.env.zsh
-```
+- `~/.zshrc.local` — interactive: aliases, functions, prompt tweaks
+- `~/.env.zsh` — all shells incl. agents: PATH, env vars
 
 ## Platforms
 
-macOS first-class; Linux best-effort for agent shells. See [CLAUDE.md](CLAUDE.md) for module
-load order, dependencies, and architecture.
+macOS first-class; Linux best-effort for agent shells. Architecture → [CLAUDE.md](CLAUDE.md).
 
-## Forking
+## Fork
 
-Change `SLUG` at the top of `install.sh` and the install URL above to point at your fork.
+Change `SLUG` in `install.sh` and the install URL above.

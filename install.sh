@@ -151,7 +151,6 @@ choose() {
     # Tools
     echo ""
     echo -e "${bold}Install dev tools?${reset}"
-    info "mise — tool version manager"
     info "fzf — fuzzy finder"
     info "zoxide — smart cd"
     info "bat — cat with syntax highlighting"
@@ -194,7 +193,7 @@ summarize() {
     ok  "Clone dotfiles to $DOTFILES"
     ok  "Symlink .zshrc, .zprofile, .hushlogin"
 
-    [[ $opt_tools  -eq 1 ]] && ok "Install mise, fzf, zoxide, bat, eza, fd, delta" || skip "Skip dev tools"
+    [[ $opt_tools  -eq 1 ]] && ok "Install fzf, zoxide, bat, eza, fd, delta" || skip "Skip dev tools"
     [[ $opt_prompt -eq 1 ]] && ok "Install oh-my-posh + prompt theme" || skip "Skip prompt (keep existing)"
     [[ $opt_git    -eq 1 ]] && ok "Configure git (fsmonitor, untrackedcache, delta)" || skip "Skip git config"
 
@@ -239,7 +238,7 @@ BREW
     # Brew packages — show errors, don't silently swallow
     if [[ $opt_tools -eq 1 ]]; then
         log "Installing dev tools..."
-        brew install mise fzf zoxide bat eza fd delta || echo -e "  ${yellow}Some packages failed — you can retry with: brew install mise fzf zoxide bat eza fd delta${reset}"
+        brew install fzf zoxide bat eza fd delta || echo -e "  ${yellow}Some packages failed — you can retry with: brew install fzf zoxide bat eza fd delta${reset}"
     fi
 
     if [[ $opt_prompt -eq 1 ]]; then
@@ -352,7 +351,7 @@ preview() {
     if [[ $opt_tools -eq 1 ]] || [[ $opt_prompt -eq 1 ]]; then
         echo ""
         info "Brew packages"
-        [[ $opt_tools  -eq 1 ]] && node "  mise, fzf, zoxide, bat, eza, fd, delta"
+        [[ $opt_tools  -eq 1 ]] && node "  fzf, zoxide, bat, eza, fd, delta"
         [[ $opt_prompt -eq 1 ]] && node "  oh-my-posh"
     fi
 
