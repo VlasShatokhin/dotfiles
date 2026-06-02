@@ -1,4 +1,6 @@
 .env
+.env.zsh
+.zshrc.local
 .DS_Store
 *.swp
 .idea/

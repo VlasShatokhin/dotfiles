@@ -16,6 +16,9 @@ export HOMEBREW_NO_ENV_HINTS=1
 export EDITOR="${EDITOR:-vim}"
 export VISUAL="${VISUAL:-vim}"
 
+# Agent shells parse output - keep it deterministic regardless of any tool's color config
+[[ -n "$CLAUDECODE" ]] && export NO_COLOR=1
+
 [[ -f "$HOME/.local/bin/env" ]] && . "$HOME/.local/bin/env"
 
 # User overrides (not in repo)

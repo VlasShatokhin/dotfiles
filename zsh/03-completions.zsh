@@ -5,7 +5,7 @@ fi
 
 autoload -Uz compinit
 # Regenerate dump once per day
-if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then compinit; else compinit -C; fi
+if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then compinit -i; else compinit -C; fi
 zinit cdreplay -q
 
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'

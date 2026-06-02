@@ -1,13 +1,21 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 
 # =============================================================================
 # Config
 # =============================================================================
 
-REPO="https://github.com/vlasshatokhin/dotfiles.git"
+# Forking? Change SLUG (and the install URL in README.md).
+SLUG="vlasshatokhin/dotfiles"
+REPO="https://github.com/$SLUG.git"
 DOTFILES="$HOME/dotfiles"
+DOTFILES_FALLBACK="$HOME/.dotfiles"   # used when ~/dotfiles is taken by another repo
 BACKUP="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
+
+# True when the dir at $1 is a checkout of our repo (origin matches SLUG, any casing)
+_is_our_repo() {
+    [[ -d "$1/.git" ]] && [[ "$(git -C "$1" remote get-url origin 2>/dev/null | tr '[:upper:]' '[:lower:]')" == *"$SLUG"* ]]
+}
 
 # =============================================================================
 # UI helpers
@@ -25,7 +33,7 @@ ask() {
     printf "%b%s%b " "$bold" "$prompt" "$reset"
     read -r reply
     reply="${reply:-$default}"
-    [[ "$reply" =~ ^[Yy]$ ]]
+    [[ "${reply:0:1}" =~ ^[Yy]$ ]]
 }
 
 info()  { echo -e "  ${grey}$1${reset}"; }
@@ -59,11 +67,16 @@ detect() {
 
     if ! command -v brew &>/dev/null; then
         echo -e "${yellow}Homebrew not found.${reset}"
-        echo "Install it first: https://brew.sh"
-        echo '  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
-        echo ""
-        echo "Then re-run this installer."
-        exit 1
+        if ask "Install Homebrew now? [Y/n]" "Y"; then
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            # Load brew into this session (Apple Silicon or Intel)
+            if [[ -x /opt/homebrew/bin/brew ]]; then eval "$(/opt/homebrew/bin/brew shellenv)"
+            elif [[ -x /usr/local/bin/brew ]]; then eval "$(/usr/local/bin/brew shellenv)"; fi
+        fi
+        if ! command -v brew &>/dev/null; then
+            echo -e "${yellow}Homebrew still unavailable - install it, then re-run: https://brew.sh${reset}"
+            exit 1
+        fi
     fi
 
     warnings=()
@@ -92,19 +105,28 @@ detect() {
         warnings+=("  asdf detected — mise replaces it; both can conflict on PATH")
     fi
 
+    # Tool init in the user's live shell config that our setup won't carry over
+    local _live_tools=""
+    _scan_tool() { if grep -qE "$2" "$HOME/.zshrc" "$HOME/.zshenv" 2>/dev/null; then _live_tools+="$1 "; fi; }
+    _scan_tool nvm   'NVM_DIR|nvm\.sh'
+    _scan_tool pyenv 'PYENV_ROOT|pyenv init'
+    _scan_tool conda '__conda_setup|conda\.sh|conda activate'
+    _scan_tool rbenv 'RBENV_ROOT|rbenv init'
+    if [[ -n "$_live_tools" ]]; then
+        warnings+=("  ${_live_tools% } init found in your shell config — back up, then re-add to ~/.zshrc.local")
+    fi
+
     existing=()
     _is_ours() {
-        [[ -L "$1" ]] && [[ "$(readlink "$1")" == "$DOTFILES/"* || "$(readlink "$1")" == "$HOME/.dotfiles/"* ]]
+        [[ -L "$1" ]] && [[ "$(readlink "$1")" == "$DOTFILES/"* || "$(readlink "$1")" == "$DOTFILES_FALLBACK/"* ]]
     }
-    for f in .zshrc .zprofile .hushlogin; do
+    for f in .zshrc .zprofile .hushlogin \
+             .config/ohmyposh/prompt.toml .config/ohmyposh/prompt-light.toml; do
         if [[ -e "$HOME/$f" || -L "$HOME/$f" ]]; then
             _is_ours "$HOME/$f" && continue
             existing+=("$f")
         fi
     done
-    if [[ -e "$HOME/.config/ohmyposh/prompt.toml" || -L "$HOME/.config/ohmyposh/prompt.toml" ]]; then
-        _is_ours "$HOME/.config/ohmyposh/prompt.toml" || existing+=(".config/ohmyposh/prompt.toml")
-    fi
 
     if [[ ${#existing[@]} -gt 0 ]]; then
         warnings+=("  existing configs will be backed up: ${existing[*]}")
@@ -133,6 +155,9 @@ choose() {
     info "fzf — fuzzy finder"
     info "zoxide — smart cd"
     info "bat — cat with syntax highlighting"
+    info "eza — modern ls"
+    info "fd — fast find / fzf backend"
+    info "delta — syntax-highlighted git diffs"
     ask "[Y/n]" "Y" && opt_tools=1 || opt_tools=0
 
     # Prompt
@@ -150,10 +175,11 @@ choose() {
         ask "[y/N]" "N" && opt_prompt=1 || opt_prompt=0
     fi
 
-    # Git performance
+    # Git config
     echo ""
-    echo -e "${bold}Enable git performance?${reset}"
+    echo -e "${bold}Configure git?${reset}"
     info "fsmonitor + untrackedcache — background daemon instead of scanning"
+    info "delta — syntax-highlighted diffs (only if delta is installed)"
     ask "[Y/n]" "Y" && opt_git=1 || opt_git=0
 }
 
@@ -168,9 +194,9 @@ summarize() {
     ok  "Clone dotfiles to $DOTFILES"
     ok  "Symlink .zshrc, .zprofile, .hushlogin"
 
-    [[ $opt_tools  -eq 1 ]] && ok "Install mise, fzf, zoxide, bat" || skip "Skip dev tools"
+    [[ $opt_tools  -eq 1 ]] && ok "Install mise, fzf, zoxide, bat, eza, fd, delta" || skip "Skip dev tools"
     [[ $opt_prompt -eq 1 ]] && ok "Install oh-my-posh + prompt theme" || skip "Skip prompt (keep existing)"
-    [[ $opt_git    -eq 1 ]] && ok "Enable git fsmonitor + untrackedcache" || skip "Skip git performance"
+    [[ $opt_git    -eq 1 ]] && ok "Configure git (fsmonitor, untrackedcache, delta)" || skip "Skip git config"
 
     [[ ${#existing[@]} -gt 0 ]] && ok "Back up existing configs to $BACKUP"
     echo ""
@@ -201,19 +227,10 @@ fpath=($brew_prefix/share/zsh/site-functions \$fpath)
 BREW
     log "Detected Homebrew at $brew_prefix"
 
-    # Is ~/dotfiles ours? If not, fall back to ~/.dotfiles
-    _is_our_repo() {
-        [[ -d "$1/.git" ]] && [[ "$(git -C "$1" remote get-url origin 2>/dev/null | tr '[:upper:]' '[:lower:]')" == *vlasshatokhin/dotfiles* ]]
-    }
-
-    if [[ -d "$DOTFILES" ]] && ! _is_our_repo "$DOTFILES"; then
-        DOTFILES="$HOME/.dotfiles"
-        log "~/dotfiles is in use, installing to $DOTFILES"
-    fi
-
+    # DOTFILES path already resolved by resolve_dotfiles (in main)
     if _is_our_repo "$DOTFILES"; then
         log "Updating dotfiles..."
-        git -C "$DOTFILES" pull --ff-only 2>/dev/null || true
+        git -C "$DOTFILES" pull --ff-only || echo -e "  ${yellow}Could not fast-forward $DOTFILES (local changes or diverged branch) - using existing checkout${reset}"
     else
         log "Cloning dotfiles..."
         git clone "$REPO" "$DOTFILES"
@@ -222,7 +239,7 @@ BREW
     # Brew packages — show errors, don't silently swallow
     if [[ $opt_tools -eq 1 ]]; then
         log "Installing dev tools..."
-        brew install mise fzf zoxide bat || echo -e "  ${yellow}Some packages failed — you can retry with: brew install mise fzf zoxide bat${reset}"
+        brew install mise fzf zoxide bat eza fd delta || echo -e "  ${yellow}Some packages failed — you can retry with: brew install mise fzf zoxide bat eza fd delta${reset}"
     fi
 
     if [[ $opt_prompt -eq 1 ]]; then
@@ -251,11 +268,18 @@ BREW
         ln -sf "$DOTFILES/ohmyposh/prompt-light.toml" ~/.config/ohmyposh/prompt-light.toml
     fi
 
-    # Git performance — only set if not already configured
+    # Git config — only set what isn't already configured (respects existing setups)
     if [[ $opt_git -eq 1 ]]; then
-        log "Enabling git performance..."
+        log "Configuring git..."
         [[ -z "$(git config --global core.fsmonitor)" ]] && git config --global core.fsmonitor true
         [[ -z "$(git config --global core.untrackedcache)" ]] && git config --global core.untrackedcache true
+        if command -v delta &>/dev/null && [[ -z "$(git config --global core.pager)" ]]; then
+            git config --global core.pager delta
+            git config --global interactive.diffFilter "delta --color-only"
+            git config --global delta.navigate true
+            git config --global delta.line-numbers true
+            git config --global delta.side-by-side true
+        fi
     fi
 
     streak
@@ -292,24 +316,26 @@ BREW
 # =============================================================================
 
 preview() {
+    local df="${DOTFILES/#$HOME/~}"   # home-relative display of the resolved repo path
     echo ""
     info "File tree (dry run — no changes made)"
     echo ""
 
     node "~/"
-    node "├── .zshrc → ~/dotfiles/.zshrc"
-    node "├── .zprofile → ~/dotfiles/.zprofile"
-    node "├── .hushlogin → ~/dotfiles/.hushlogin"
+    node "├── .zshrc → $df/.zshrc"
+    node "├── .zprofile → $df/.zprofile"
+    node "├── .hushlogin → $df/.hushlogin"
 
     if [[ $opt_prompt -eq 1 ]]; then
         node "├── .config/"
         node "│   └── ohmyposh/"
-        node "│       └── prompt.toml → ~/dotfiles/ohmyposh/prompt.toml"
+        node "│       ├── prompt.toml → $df/ohmyposh/prompt.toml"
+        node "│       └── prompt-light.toml → $df/ohmyposh/prompt-light.toml"
     fi
 
     if [[ ${#existing[@]} -gt 0 ]]; then
         local last="${existing[${#existing[@]}-1]}"
-        node "├── .dotfiles-backup/$(date +%Y%m%d-%H%M%S)/"
+        node "├── ${BACKUP#"$HOME"/}/"
         for f in "${existing[@]}"; do
             if [[ "$f" == "$last" ]]; then
                 node "│   └── $f (backed up)"
@@ -319,23 +345,45 @@ preview() {
         done
     fi
 
+    echo ""
+    info "Always written"
+    node "  ~/.cache/zsh/init/brew.zsh (regenerated)"
+
     if [[ $opt_tools -eq 1 ]] || [[ $opt_prompt -eq 1 ]]; then
         echo ""
         info "Brew packages"
-        [[ $opt_tools  -eq 1 ]] && node "  mise, fzf, zoxide, bat"
+        [[ $opt_tools  -eq 1 ]] && node "  mise, fzf, zoxide, bat, eza, fd, delta"
         [[ $opt_prompt -eq 1 ]] && node "  oh-my-posh"
     fi
 
     if [[ $opt_git -eq 1 ]]; then
         echo ""
         info "Git config (global)"
-        node "  core.fsmonitor = true"
-        node "  core.untrackedcache = true"
+        [[ -n "$(git config --global core.fsmonitor)" ]] && node "  core.fsmonitor (already set, skipping)" || node "  core.fsmonitor = true"
+        [[ -n "$(git config --global core.untrackedcache)" ]] && node "  core.untrackedcache (already set, skipping)" || node "  core.untrackedcache = true"
+        if command -v delta &>/dev/null; then
+            [[ -n "$(git config --global core.pager)" ]] && node "  core.pager (already set, skipping delta)" || node "  core.pager = delta (+ navigate, line-numbers, side-by-side)"
+        fi
     fi
 
     streak
     echo ""
     info "Run without --dry-run to apply, then open a new tab"
+}
+
+# =============================================================================
+# Resolve repo location (fall back to ~/.dotfiles when ~/dotfiles is foreign)
+# =============================================================================
+
+resolve_dotfiles() {
+    if [[ -d "$DOTFILES" ]] && ! _is_our_repo "$DOTFILES"; then
+        if [[ -e "$DOTFILES_FALLBACK" ]] && ! _is_our_repo "$DOTFILES_FALLBACK"; then
+            echo -e "  ${yellow}Both ~/dotfiles and ~/.dotfiles already exist and aren't ours.${reset}"
+            echo -e "  ${yellow}Move or remove one, then re-run.${reset}"
+            exit 1
+        fi
+        DOTFILES="$DOTFILES_FALLBACK"
+    fi
 }
 
 # =============================================================================
@@ -345,6 +393,12 @@ preview() {
 DRY_RUN=0
 [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=1
 
+# Prompts read from the terminal. `bash <(curl ...)` already provides one; a bare
+# `curl | bash` puts the script itself on stdin, so reattach to the terminal when we
+# can (else the prompts get answered by the script's own lines). With no terminal at
+# all (CI, piped answers), fall through and read whatever is on stdin.
+[[ ! -t 0 ]] && { : </dev/tty; } 2>/dev/null && exec </dev/tty
+
 echo ""
 echo -e "${bold}Dotfiles installer${reset}"
 [[ $DRY_RUN -eq 1 ]] && echo -e "${grey}  (dry run)${reset}"
@@ -352,6 +406,7 @@ echo ""
 
 detect
 choose
+resolve_dotfiles
 
 if [[ $DRY_RUN -eq 1 ]]; then
     preview

@@ -10,16 +10,12 @@ FAIL=0
 cleanup() { docker rmi "$IMAGE" &>/dev/null || true; }
 trap cleanup EXIT
 
-check() {
-    local desc="$1" result="$2"
-    if [[ "$result" == "0" ]]; then
-        echo "  ✔ $desc"
-        PASS=$((PASS + 1))
-    else
-        echo "  ✘ $desc"
-        FAIL=$((FAIL + 1))
-    fi
-}
+pass() { echo "  ✔ $1"; PASS=$((PASS + 1)); }
+fail() { echo "  ✘ $1"; FAIL=$((FAIL + 1)); }
+
+# Assert the captured $out matches (or does not match) an extended regex
+assert_contains() { grep -qE -- "$2" <<<"$out" && pass "$1" || fail "$1"; }
+assert_absent()   { ! grep -qE -- "$2" <<<"$out" && pass "$1" || fail "$1"; }
 
 run() {
     docker run --rm -i --entrypoint /bin/bash "$IMAGE" -c "$1" 2>&1
@@ -30,7 +26,7 @@ docker build -f test/Dockerfile -t "$IMAGE" . -q >/dev/null
 
 # ─────────────────────────────────────────────────────────
 echo ""
-echo "Test 1: Default install (tools=y, prompt=y, git=y)"
+echo "Test 1: Default install + shell loads end-to-end"
 # ─────────────────────────────────────────────────────────
 out=$(printf '\n\n\ny\n' | run '
     echo "# old" > ~/.zshrc
@@ -40,31 +36,41 @@ out=$(printf '\n\n\ny\n' | run '
     readlink ~/.zprofile
     readlink ~/.hushlogin
     readlink ~/.config/ohmyposh/prompt.toml
-    cat ~/.cache/zsh/init/brew.zsh 2>/dev/null | head -1
+    readlink ~/.config/ohmyposh/prompt-light.toml
+    head -1 ~/.cache/zsh/init/brew.zsh 2>/dev/null
     git config --global core.fsmonitor
+    echo "---SMOKE---"
+    zsh -c "source ~/.zshrc; echo SHELL_LOADED" 2>/tmp/serr
+    echo "SMOKE_STDERR=[$(cat /tmp/serr)]"
+    zsh -n ~/.cache/zsh/init/brew.zsh && echo "BREWCACHE_OK"
 ')
 
-check "Symlink .zshrc"        "$(echo "$out" | grep -c 'dotfiles/.zshrc'    | grep -qc 1 && echo 0 || echo 1)"
-check "Symlink .zprofile"     "$(echo "$out" | grep -c 'dotfiles/.zprofile' | grep -qc 1 && echo 0 || echo 1)"
-check "Symlink .hushlogin"    "$(echo "$out" | grep -c 'dotfiles/.hushlogin'| grep -qc 1 && echo 0 || echo 1)"
-check "Symlink prompt.toml"      "$(echo "$out" | grep -c 'ohmyposh/prompt.toml'  | grep -qc 1 && echo 0 || echo 1)"
-check "Brew cache generated"  "$(echo "$out" | grep -qc 'HOMEBREW_PREFIX'   && echo 0 || echo 1)"
-check "Git fsmonitor enabled" "$(echo "$out" | grep -qc 'true'              && echo 0 || echo 1)"
+assert_contains "Symlink .zshrc"          'dotfiles/\.zshrc'
+assert_contains "Symlink .zprofile"       'dotfiles/\.zprofile'
+assert_contains "Symlink .hushlogin"      'dotfiles/\.hushlogin'
+assert_contains "Symlink prompt.toml"     'ohmyposh/prompt\.toml'
+assert_contains "Symlink prompt-light.toml" 'ohmyposh/prompt-light\.toml'
+assert_contains "Brew cache generated"    'HOMEBREW_PREFIX'
+assert_contains "Git fsmonitor enabled"   'true'
+assert_contains "Shell sources cleanly"    'SHELL_LOADED'
+assert_contains "Shell load has no stderr" 'SMOKE_STDERR=\[\]'
+assert_contains "Brew cache is valid zsh"  'BREWCACHE_OK'
 
 # ─────────────────────────────────────────────────────────
 echo ""
-echo "Test 2: Backup existing configs"
+echo "Test 2: Backup existing configs + flag tool-init for migration"
 # ─────────────────────────────────────────────────────────
 out=$(printf '\n\n\ny\n' | run '
-    echo "# old zshrc" > ~/.zshrc
+    echo "export NVM_DIR=$HOME/.nvm" > ~/.zshrc
     echo "# old zprofile" > ~/.zprofile
     /home/tester/dotfiles/install.sh
     echo "---VERIFY---"
     find ~/.dotfiles-backup -type f 2>/dev/null
 ')
 
-check "Backed up .zshrc"    "$(echo "$out" | grep -qc 'dotfiles-backup.*\.zshrc'    && echo 0 || echo 1)"
-check "Backed up .zprofile"  "$(echo "$out" | grep -qc 'dotfiles-backup.*\.zprofile' && echo 0 || echo 1)"
+assert_contains "Backed up .zshrc"     'dotfiles-backup.*\.zshrc'
+assert_contains "Backed up .zprofile"  'dotfiles-backup.*\.zprofile'
+assert_contains "nvm flagged before confirm" 'nvm.*init found in your shell config'
 
 # ─────────────────────────────────────────────────────────
 echo ""
@@ -77,8 +83,8 @@ out=$(printf '\n\n\ny\n' | run '
     test -L ~/.config/ohmyposh/prompt.toml && echo "SYMLINKED" || echo "SKIPPED"
 ')
 
-check "Prompt skipped" "$(echo "$out" | grep -qc 'SKIPPED' && echo 0 || echo 1)"
-check "Starship warning" "$(echo "$out" | grep -qc 'starship detected' && echo 0 || echo 1)"
+assert_contains "Prompt skipped"   'SKIPPED'
+assert_contains "Starship warning" 'starship detected'
 
 # ─────────────────────────────────────────────────────────
 echo ""
@@ -93,9 +99,10 @@ out=$(printf '\n\n\n' | run '
     test -f ~/.cache/zsh/init/brew.zsh && echo "CACHE_EXISTS" || echo "NO_CACHE"
 ')
 
-check "zshrc unchanged"  "$(echo "$out" | grep -qc '# original'  && echo 0 || echo 1)"
-check "No backup created" "$(echo "$out" | grep -qc 'NO_BACKUP'  && echo 0 || echo 1)"
-check "No cache created"  "$(echo "$out" | grep -qc 'NO_CACHE'   && echo 0 || echo 1)"
+assert_contains "zshrc unchanged"          '# original'
+assert_contains "No backup created"        'NO_BACKUP'
+assert_contains "No cache created"         'NO_CACHE'
+assert_contains "Preview lists prompt-light" 'prompt-light\.toml'
 
 # ─────────────────────────────────────────────────────────
 echo ""
@@ -105,8 +112,8 @@ out=$(docker run --rm -i --user root --entrypoint /bin/bash "$IMAGE" -c '
     /home/tester/dotfiles/install.sh 2>&1; echo "EXIT=$?"
 ')
 
-check "Exits with error" "$(echo "$out" | grep -qc 'EXIT=1'          && echo 0 || echo 1)"
-check "Shows warning"    "$(echo "$out" | grep -qc 'Do not run as root' && echo 0 || echo 1)"
+assert_contains "Exits with error" 'EXIT=1'
+assert_contains "Shows warning"    'Do not run as root'
 
 # ─────────────────────────────────────────────────────────
 echo ""
@@ -118,7 +125,47 @@ out=$(printf '\n\n\ny\n' | run '
     cat ~/.cache/zsh/init/brew.zsh
 ')
 
-check "Uses detected prefix" "$(echo "$out" | grep -qc '/home/tester/brew' && echo 0 || echo 1)"
+assert_contains "Uses detected prefix" '/home/tester/brew'
+
+# ─────────────────────────────────────────────────────────
+echo ""
+echo "Test 7: Re-run is idempotent (no duplicate backups)"
+# ─────────────────────────────────────────────────────────
+out=$(printf '\n\n\ny\n\n\n\ny\n' | run '
+    echo "# old" > ~/.zshrc
+    /home/tester/dotfiles/install.sh   # run 1: real file backed up, symlinks created
+    /home/tester/dotfiles/install.sh   # run 2: symlinks are ours -> no new backup
+    echo "---VERIFY---"
+    echo "BACKUP_DIRS=$(ls -1d ~/.dotfiles-backup/*/ 2>/dev/null | wc -l | tr -d " ")"
+    readlink ~/.zshrc
+')
+
+assert_contains "Exactly one backup after two runs" 'BACKUP_DIRS=1'
+assert_contains "zshrc still ours after re-run"      'dotfiles/\.zshrc'
+
+# ─────────────────────────────────────────────────────────
+echo ""
+echo "Test 8: Detection paths (p10k / oh-my-zsh / asdf)"
+# ─────────────────────────────────────────────────────────
+out=$(printf '\n\n\ny\n' | run '
+    touch ~/.p10k.zsh
+    /home/tester/dotfiles/install.sh
+    echo "---VERIFY---"
+    test -L ~/.config/ohmyposh/prompt.toml && echo "SYMLINKED" || echo "SKIPPED"
+')
+
+assert_contains "p10k: prompt skipped"   'SKIPPED'
+assert_contains "p10k: detected warning" 'powerlevel10k detected'
+
+out=$(printf '\n\n\ny\n' | run '
+    mkdir -p ~/.oh-my-zsh ~/.asdf
+    /home/tester/dotfiles/install.sh
+    echo "---VERIFY---"
+    echo done
+')
+
+assert_contains "oh-my-zsh warning" 'replaces it with zinit'
+assert_contains "asdf warning"      'asdf detected'
 
 # ─────────────────────────────────────────────────────────
 echo ""

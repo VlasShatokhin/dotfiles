@@ -12,4 +12,13 @@ _cached_init() {
 }
 
 (( $+commands[mise] )) && _cached_init mise "activate zsh"
-[[ -t 1 ]] && (( $+commands[fzf] )) && _cached_init fzf "--zsh"
+
+if [[ -t 1 ]] && (( $+commands[fzf] )); then
+    _cached_init fzf "--zsh"
+    # Preview files on Ctrl-T (no forced colors - terminal palette is honored)
+    export FZF_CTRL_T_OPTS="--preview 'bat --color=always --style=numbers --line-range=:300 {} 2>/dev/null || ls {}'"
+    if (( $+commands[fd] )); then
+        export FZF_DEFAULT_COMMAND="fd --type f --hidden --exclude .git"
+        export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    fi
+fi

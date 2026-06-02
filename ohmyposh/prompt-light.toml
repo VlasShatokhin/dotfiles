@@ -64,12 +64,12 @@ type = 'text'
 style = 'plain'
 foreground = '#444444'
 background = 'transparent'
-template = '❯'
+template = '{{ if gt .Code 0 }}<red>❯</>{{ else }}❯{{ end }}'
 
 [transient_prompt]
 foreground = '#888888'
 background = 'transparent'
-template = '❯ '
+template = '{{ if gt .Code 0 }}<red>❯</> {{ else }}❯ {{ end }}'
 
 [secondary_prompt]
 foreground = 'magenta'
