@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint (zsh syntax + shellcheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install zsh
+        run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Syntax-check every zsh module
+        run: for f in .zshrc .zprofile zsh/*.zsh; do echo "zsh -n $f"; zsh -n "$f"; done
+      - name: Shellcheck bash scripts (error severity)
+        run: shellcheck -S error install.sh test/test.sh test/mock-brew
+
+  test:
+    name: Install tests (Docker)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run install test suite
+        run: test/test.sh
