@@ -6,6 +6,9 @@ bindkey "^[[1;3D" backward-word     # Option+Left
 bindkey "^[^[[C" forward-word       # Alternative Option+Right
 bindkey "^[^[[D" backward-word      # Alternative Option+Left
 
+# Word jumps stop at / . - so paths edit piece by piece
+WORDCHARS=${WORDCHARS//[\/.-]/}
+
 # Ctrl-X Ctrl-E — edit the current command line in $EDITOR
 autoload -Uz edit-command-line
 zle -N edit-command-line

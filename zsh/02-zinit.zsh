@@ -1,34 +1,46 @@
-# Zinit — plugin manager
+# Prompt + zinit plugin manager
 # `zinit update` to update plugins, `zinit self-update` for zinit itself.
 # Auto-update runs weekly (background, logged) - see bottom of file.
 [[ -t 1 ]] || return
+
+# Prompt — oh-my-posh. Independent of zinit: stays up even if plugin bootstrap fails.
+if (( $+commands[oh-my-posh] )); then
+    # Appearance: $DOTFILES_APPEARANCE wins; else cached macOS detection, refreshed in
+    # the background - a system dark/light toggle lands one shell later. Keeps the
+    # ~18ms `defaults read` off the startup path.
+    local _omp_appearance="$DOTFILES_APPEARANCE"
+    if [[ -z "$_omp_appearance" ]] && (( $+commands[defaults] )); then
+        local _appearance_cache="$HOME/.cache/zsh/init/appearance"
+        [[ -f "$_appearance_cache" ]] && _omp_appearance="$(<"$_appearance_cache")"
+        if [[ -z "$_omp_appearance" ]]; then
+            [[ "$(defaults read -g AppleInterfaceStyle 2>/dev/null)" == "Dark" ]] \
+                && _omp_appearance=dark || _omp_appearance=light
+            mkdir -p "${_appearance_cache:h}"
+            print -r -- "$_omp_appearance" >| "$_appearance_cache"
+        else
+            ( [[ "$(defaults read -g AppleInterfaceStyle 2>/dev/null)" == "Dark" ]] \
+                && print -r -- dark >| "$_appearance_cache" \
+                || print -r -- light >| "$_appearance_cache" ) &>/dev/null &!
+        fi
+    fi
+    [[ -z "$_omp_appearance" ]] && _omp_appearance=dark
+    local _omp_config="$HOME/.config/ohmyposh/prompt.toml"
+    if [[ "$_omp_appearance" == "light" && -f "$HOME/.config/ohmyposh/prompt-light.toml" ]]; then
+        _omp_config="$HOME/.config/ohmyposh/prompt-light.toml"
+    fi
+    # Run init live per shell - do not cache it. oh-my-posh v29 binds the theme to a
+    # per-invocation session id, so a replayed cached init resolves to the default theme.
+    eval "$(oh-my-posh init zsh --config "$_omp_config")"
+fi
 
 ZINIT_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git"
 if [[ ! -d "$ZINIT_HOME" ]]; then
     mkdir -p "$(dirname $ZINIT_HOME)"
     git clone https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"
 fi
+# Offline or failed clone: skip plugins, keep the shell (and prompt) usable
+[[ -r "$ZINIT_HOME/zinit.zsh" ]] || return
 source "$ZINIT_HOME/zinit.zsh"
-
-# Prompt — oh-my-posh. Appearance: $DOTFILES_APPEARANCE wins; else macOS dark/light; else dark.
-if (( $+commands[oh-my-posh] )); then
-    local _omp_appearance="${DOTFILES_APPEARANCE:-dark}"
-    if [[ -z "$DOTFILES_APPEARANCE" ]] && (( $+commands[defaults] )); then
-        [[ "$(defaults read -g AppleInterfaceStyle 2>/dev/null)" == "Dark" ]] || _omp_appearance="light"
-    fi
-    local _omp_config="$HOME/.config/ohmyposh/prompt.toml"
-    if [[ "$_omp_appearance" == "light" ]] && [[ -f "$HOME/.config/ohmyposh/prompt-light.toml" ]]; then
-        _omp_config="$HOME/.config/ohmyposh/prompt-light.toml"
-    fi
-    local _omp_cache="$HOME/.cache/zsh/init/oh-my-posh-${_omp_appearance}.zsh"
-    # Per-appearance cache; `>` truncates and the -nt guard handles binary upgrades,
-    # so dark and light caches coexist (no thrash when toggling appearance).
-    if [[ ! -f "$_omp_cache" ]] || [[ "$(command -v oh-my-posh)" -nt "$_omp_cache" ]]; then
-        mkdir -p "${_omp_cache:h}"
-        oh-my-posh init zsh --config "$_omp_config" > "$_omp_cache"
-    fi
-    source "$_omp_cache"
-fi
 
 # Turbo — loads after prompt renders
 zinit ice wait lucid; zinit light zsh-users/zsh-completions
@@ -41,15 +53,9 @@ zinit light zsh-users/zsh-history-substring-search
 zinit ice wait lucid; zinit snippet OMZP::git
 zinit ice wait lucid; zinit snippet OMZP::command-not-found
 
-# Weekly auto-update (background, non-blocking)
-local _zinit_update_stamp="$ZINIT_HOME/.last_auto_update"
-if [[ ! -f "$_zinit_update_stamp" || -n "$_zinit_update_stamp"(#qN.md+7) ]]; then
-    ( zinit self-update && zinit update --parallel && touch "$_zinit_update_stamp" ) &>> "$HOME/.cache/zsh/init/zinit-update.log" &!
-fi
-
-# Daily snapshot cleanup (keep 10 most recent)
-local _snap_dir="$HOME/.claude/shell-snapshots"
-local _snap_stamp="$_snap_dir/.last_cleanup"
-if [[ -d "$_snap_dir" ]] && [[ ! -f "$_snap_stamp" || -n "$_snap_stamp"(#qN.md+1) ]]; then
-    ( snaps=( "$_snap_dir"/snapshot-*.sh(Nom) ); (( ${#snaps} > 10 )) && rm -f "${(@)snaps[11,-1]}"; touch "$_snap_stamp" ) &!
+# Weekly auto-update (background; log keeps last run only)
+if _stale "$ZINIT_HOME/.last_auto_update" 168; then
+    mkdir -p "$HOME/.cache/zsh/init"
+    ( zinit self-update && zinit update --parallel && touch "$ZINIT_HOME/.last_auto_update" ) \
+        &>| "$HOME/.cache/zsh/init/zinit-update.log" &!
 fi

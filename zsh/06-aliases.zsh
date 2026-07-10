@@ -1,6 +1,9 @@
 # Interactive aliases - agents use full commands, so this module is tty-only
 [[ -t 1 ]] || return
 
+# Pasted commands may carry # comments - accept them
+setopt interactive_comments
+
 alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."

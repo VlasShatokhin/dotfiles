@@ -386,30 +386,36 @@ resolve_dotfiles() {
 }
 
 # =============================================================================
-# Main
+# Main — wrapped in a function and called on the last line, so a partial
+# download (truncated mid-stream) never executes: bash parses the whole string
+# before main() is reached, and a cut-off script never reaches the call.
 # =============================================================================
 
-DRY_RUN=0
-[[ "${1:-}" == "--dry-run" ]] && DRY_RUN=1
+main() {
+    local DRY_RUN=0
+    [[ "${1:-}" == "--dry-run" ]] && DRY_RUN=1
 
-# Prompts read from the terminal. `bash <(curl ...)` already provides one; a bare
-# `curl | bash` puts the script itself on stdin, so reattach to the terminal when we
-# can (else the prompts get answered by the script's own lines). With no terminal at
-# all (CI, piped answers), fall through and read whatever is on stdin.
-[[ ! -t 0 ]] && { : </dev/tty; } 2>/dev/null && exec </dev/tty
+    # Prompts read from the terminal. `bash <(curl ...)` already provides one; a bare
+    # `curl | bash` puts the script itself on stdin, so reattach to the terminal when we
+    # can (else the prompts get answered by the script's own lines). With no terminal at
+    # all (CI, piped answers), fall through and read whatever is on stdin.
+    [[ ! -t 0 ]] && { : </dev/tty; } 2>/dev/null && exec </dev/tty
 
-echo ""
-echo -e "${bold}Dotfiles installer${reset}"
-[[ $DRY_RUN -eq 1 ]] && echo -e "${grey}  (dry run)${reset}"
-echo ""
+    echo ""
+    echo -e "${bold}Dotfiles installer${reset}"
+    [[ $DRY_RUN -eq 1 ]] && echo -e "${grey}  (dry run)${reset}"
+    echo ""
 
-detect
-choose
-resolve_dotfiles
+    detect
+    choose
+    resolve_dotfiles
 
-if [[ $DRY_RUN -eq 1 ]]; then
-    preview
-else
-    summarize
-    execute
-fi
+    if [[ $DRY_RUN -eq 1 ]]; then
+        preview
+    else
+        summarize
+        execute
+    fi
+}
+
+main "$@"

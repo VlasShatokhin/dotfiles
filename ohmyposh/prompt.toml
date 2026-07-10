@@ -10,6 +10,14 @@ type = 'prompt'
 alignment = 'left'
 newline = true
 
+# user@host - only over SSH
+[[blocks.segments]]
+type = 'session'
+style = 'plain'
+foreground = '#555555'
+background = 'transparent'
+template = '{{ if .SSHSession }}{{ .UserName }}@{{ .HostName }} {{ end }}'
+
 [[blocks.segments]]
 type = 'path'
 style = 'plain'
@@ -43,6 +51,27 @@ template = '{{ if gt .Jobs 0 }} &{{ .Jobs }}{{ end }}'
 [[blocks]]
 type = 'rprompt'
 overflow = 'hidden'
+
+# Exit code of the last command - only on failure
+[[blocks.segments]]
+type = 'status'
+style = 'plain'
+foreground = 'red'
+background = 'transparent'
+template = '✗{{ .Code }} '
+
+# Active python venv - only when one is activated
+[[blocks.segments]]
+type = 'python'
+style = 'plain'
+foreground = '#555555'
+background = 'transparent'
+template = '{{ if .Venv }}{{ .Venv }} {{ end }}'
+
+[blocks.segments.properties]
+display_mode = 'environment'
+fetch_version = false
+home_enabled = false
 
 [[blocks.segments]]
 type = 'executiontime'

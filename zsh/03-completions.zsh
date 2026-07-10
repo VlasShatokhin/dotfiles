@@ -4,9 +4,9 @@ if [[ ! -t 1 ]]; then
 fi
 
 autoload -Uz compinit
-# Regenerate dump once per day
-if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then compinit -i; else compinit -C; fi
-zinit cdreplay -q
+# Full compinit (with audit) once per day; -C trusts the dump otherwise
+if _stale ~/.zcompdump 24; then compinit -i; else compinit -C; fi
+(( $+functions[zinit] )) && zinit cdreplay -q
 
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"

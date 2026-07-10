@@ -1,27 +1,30 @@
 # dotfiles
 
-> Lightspeed zsh — sub-50ms startup, equally fast for humans and AI agents.
+> Fast universal zsh - one config for humans and AI agents.
 
 ## Features
 
-- Agent-aware — non-TTY shells skip interactive-only modules
-- Cached tool init (`~/.cache/zsh/init/`) — no per-shell process spawns
-- Auto dark/light prompt (oh-my-posh), exit-code-aware `❯`
+- Interactive: oh-my-posh prompt, syntax highlighting, autosuggestions, fzf-tab, prefix history search
+- Agent shells (non-TTY): skip interactive modules, `NO_COLOR`, ~20ms startup
+- Auto dark/light prompt from macOS appearance (cached, background-refreshed)
+- Prompt statuses: git, exit code, python venv, SSH host, exec time, contextual tooltips
+- Cached tool init in `~/.cache/zsh/init/` - fzf, zoxide, brew
 - eza · fd · bat · delta · zoxide · fzf (Ctrl-T preview, Ctrl-R history)
-- Syntax highlighting · autosuggestions · prefix history search
-- Universal installer — detects oh-my-zsh / p10k / starship / asdf / nvm / pyenv / conda, keeps the existing prompt, backs up what it replaces
+- Universal installer - detects oh-my-zsh / p10k / starship / asdf / nvm / pyenv / conda, keeps the existing prompt, backs up what it replaces
 
 ## Install
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/vlasshatokhin/dotfiles/main/install.sh)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/vlasshatokhin/dotfiles/main/install.sh)"
 ```
 
-Interactive, opt-in. `--dry-run` previews without changes. Missing Homebrew is offered for install.
+Preview without changes:
 
-## Installs (opt-in, via Homebrew)
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/vlasshatokhin/dotfiles/main/install.sh)" -- --dry-run
+```
 
-`fzf` · `zoxide` · `bat` · `eza` · `fd` · `delta` · `oh-my-posh`
+Opt-in via Homebrew: `fzf` · `zoxide` · `bat` · `eza` · `fd` · `delta` · `oh-my-posh`
 
 ## Existing setup
 
@@ -31,13 +34,17 @@ Interactive, opt-in. `--dry-run` previews without changes. Missing Homebrew is o
 
 ## Customize
 
-- `~/.zshrc.local` — interactive: aliases, functions, prompt tweaks
-- `~/.env.zsh` — all shells incl. agents: PATH, env vars
+| File | Scope |
+|------|-------|
+| `~/.zshrc.local` | interactive shells - aliases, functions, secrets |
+| `~/.env.zsh` | all shells incl. agents - PATH, env vars |
+| `DOTFILES_APPEARANCE=dark\|light` | force prompt palette |
 
 ## Platforms
 
-macOS first-class; Linux best-effort for agent shells. Architecture → [CLAUDE.md](CLAUDE.md).
+- macOS first-class; Linux best-effort for agent shells
+- Architecture: [CLAUDE.md](CLAUDE.md)
 
 ## Fork
 
-Change `SLUG` in `install.sh` and the install URL above.
+- Change `SLUG` in `install.sh` and the install URL above
